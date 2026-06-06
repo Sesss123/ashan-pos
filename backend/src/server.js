@@ -1,29 +1,49 @@
 const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
-require('dotenv').config();
+const { PrismaClient } = require('@prisma/client');
+const http = require('http');
+const { Server } = require('socket.io');
+
+// Modular Routers
+const authRoutes = require('./modules/auth/auth.routes');
+const posRoutes = require('./modules/pos/pos.routes');
+const orderRoutes = require('./modules/orders/orders.routes');
+const kitchenRoutes = require('./modules/kitchen/kitchen.routes');
+
+const { errorHandler } = require('./shared/middlewares/errorHandler');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: '*' } });
+const prisma = new PrismaClient();
 
-// Middleware
 app.use(express.json());
-app.use(cors());
-app.use(helmet());
-app.use(morgan('dev'));
 
-// Basic Route
-app.get('/', (req, res) => {
-  res.json({ message: 'Welcome to Restaurant ERP API' });
+// Inject Socket.IO & Prisma into requests
+app.use((req, res, next) => {
+  req.io = io;
+  req.prisma = prisma;
+  next();
 });
 
-// Error Handling Middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'Internal Server Error', error: err.message });
+// Modular Routes
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/pos', posRoutes);
+app.use('/api/v1/orders', orderRoutes);
+app.use('/api/v1/kitchen', kitchenRoutes);
+
+// Shared Global Error Handler
+app.use(errorHandler);
+
+// Socket.IO Events for Real-Time Operations
+io.on('connection', (socket) => {
+  console.log('[Socket] Client connected:', socket.id);
+
+  socket.on('disconnect', () => {
+    console.log('[Socket] Client disconnected:', socket.id);
+  });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`[ERP] Modular Backend running on port ${PORT}`);
 });
