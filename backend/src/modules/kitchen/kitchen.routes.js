@@ -1,15 +1,15 @@
 const express = require('express');
 const router = express.Router();
+const kitchenController = require('./kitchen.controller');
+const { validateDTO, authenticateToken, requireRole } = require('../../shared/middlewares/security');
+const { updateKitchenStatusSchema } = require('../../shared/validators/dtos');
 
-router.get('/orders', (req, res) => res.json({ message: 'KOT orders fetched' }));
-router.post('/prepare', (req, res) => {
-  req.io.emit('order_preparing', { orderId: req.body.orderId });
-  res.json({ message: 'Order marked as preparing' });
-});
-router.post('/ready', (req, res) => {
-  req.io.emit('order_ready', { orderId: req.body.orderId });
-  res.json({ message: 'Order marked as ready' });
-});
-router.post('/complete', (req, res) => res.json({ message: 'Order completed' }));
+router.use(authenticateToken);
+
+// GET /api/v1/kitchen/queue
+router.get('/queue', requireRole(['Kitchen', 'Admin']), kitchenController.getQueue);
+
+// PUT /api/v1/kitchen/status
+router.put('/status', requireRole(['Kitchen', 'Admin']), validateDTO(updateKitchenStatusSchema), kitchenController.updateStatus);
 
 module.exports = router;

@@ -1,10 +1,26 @@
 const express = require('express');
 const router = express.Router();
 const posController = require('./pos.controller');
+const { validateDTO, authenticateToken, requireRole } = require('../../shared/middlewares/security');
+const { createOrderSchema } = require('../../shared/validators/dtos');
 
-router.post('/create-sale', posController.createOrder);
-router.get('/history', posController.getBillHistory);
-router.post('/payment', (req, res) => res.json({ message: 'Payment processed' }));
-router.post('/daily-closing', (req, res) => res.json({ message: 'Daily closing calculated' }));
+// Enforce JWT Authentication for all POS routes
+router.use(authenticateToken);
+
+// POST /api/v1/pos/create-sale
+// Only Cashiers and Admins can create POS sales
+router.post(
+  '/create-sale', 
+  requireRole(['Cashier', 'Admin']), 
+  validateDTO(createOrderSchema), 
+  posController.createOrder
+);
+
+// GET /api/v1/pos/history
+router.get(
+  '/history', 
+  requireRole(['Cashier', 'Admin', 'Waiter']), 
+  posController.getBillHistory
+);
 
 module.exports = router;

@@ -1,9 +1,13 @@
 const express = require('express');
 const router = express.Router();
+const authController = require('./auth.controller');
+const { validateDTO, authenticateToken } = require('../../shared/middlewares/security');
+const { loginSchema } = require('../../shared/validators/dtos');
 
-router.post('/login', (req, res) => res.json({ message: 'Login successful' }));
-router.post('/logout', (req, res) => res.json({ message: 'Logout successful' }));
-router.post('/refresh', (req, res) => res.json({ message: 'Token refreshed' }));
-router.get('/profile', (req, res) => res.json({ message: 'User profile fetched' }));
+// POST /api/v1/auth/login
+router.post('/login', validateDTO(loginSchema), authController.login);
+
+// POST /api/v1/auth/logout
+router.post('/logout', authenticateToken, authController.logout);
 
 module.exports = router;

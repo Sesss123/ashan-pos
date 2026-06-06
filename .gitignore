@@ -1,0 +1,42 @@
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+.env
+dist/
+build/
+.pnp
+.pnp.js
+
+# React / Vite (admin-web)
+admin-web/node_modules/
+admin-web/dist/
+admin-web/build/
+admin-web/.eslintcache
+
+# Backend (backend)
+backend/node_modules/
+backend/dist/
+backend/build/
+
+# Flutter (frontend)
+frontend/.dart_tool/
+frontend/build/
+frontend/.packages
+frontend/.pub/
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
+frontend/ios/Pods/
+frontend/ios/.symlinks/
+frontend/ios/Flutter/Flutter.framework
+frontend/ios/Flutter/Flutter.podspec
+frontend/android/app/build/
+frontend/android/.gradle/
+frontend/windows/flutter/ephemeral/
+frontend/linux/flutter/ephemeral/
+frontend/macos/Flutter/ephemeral/
+
+# General OS Files
+.DS_Store
+Thumbs.db
+*.log

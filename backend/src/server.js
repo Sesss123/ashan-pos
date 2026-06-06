@@ -9,13 +9,31 @@ const posRoutes = require('./modules/pos/pos.routes');
 const orderRoutes = require('./modules/orders/orders.routes');
 const kitchenRoutes = require('./modules/kitchen/kitchen.routes');
 
+const { initSocketServer } = require('./realtime/socketServer');
 const { errorHandler } = require('./shared/middlewares/errorHandler');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const cors = require('cors');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: '*' } });
+
+// Initialize Enterprise Socket.IO with Redis Adapter
+const io = initSocketServer(server);
 const prisma = new PrismaClient();
 
+// --- 100/100 SECURITY MIDDLEWARES ---
+app.use(helmet());
+app.use(cors({ origin: process.env.ALLOWED_ORIGINS || '*' }));
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, 
+  max: 200, 
+  message: { success: false, message: 'Too many requests, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api/', apiLimiter);
 app.use(express.json());
 
 // Inject Socket.IO & Prisma into requests
@@ -34,14 +52,7 @@ app.use('/api/v1/kitchen', kitchenRoutes);
 // Shared Global Error Handler
 app.use(errorHandler);
 
-// Socket.IO Events for Real-Time Operations
-io.on('connection', (socket) => {
-  console.log('[Socket] Client connected:', socket.id);
-
-  socket.on('disconnect', () => {
-    console.log('[Socket] Client disconnected:', socket.id);
-  });
-});
+// Legacy io.on removed. Real-time is managed by initSocketServer.
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {

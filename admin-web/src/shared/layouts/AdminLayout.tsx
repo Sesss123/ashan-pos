@@ -1,9 +1,11 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Typography, AppBar, Toolbar, IconButton, Avatar } from '@mui/material';
+import { Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Typography, AppBar, Toolbar, Avatar } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import PeopleIcon from '@mui/icons-material/People';
 import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
 import InventoryIcon from '@mui/icons-material/Inventory';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import AssessmentIcon from '@mui/icons-material/Assessment';
 import SearchIcon from '@mui/icons-material/Search';
 
 const drawerWidth = 260;
@@ -13,10 +15,12 @@ export default function AdminLayout() {
   const location = useLocation();
 
   const menuItems = [
-    { text: 'Overview', icon: <DashboardIcon />, path: '/admin/dashboard' },
-    { text: 'Users', icon: <PeopleIcon />, path: '/admin/users' },
-    { text: 'Menu', icon: <RestaurantMenuIcon />, path: '/admin/menu' },
-    { text: 'Inventory', icon: <InventoryIcon />, path: '/admin/inventory' },
+    { text: 'Overview', icon: <DashboardIcon />, path: '/dashboard' },
+    { text: 'Users', icon: <PeopleIcon />, path: '/users' },
+    { text: 'Menu', icon: <RestaurantMenuIcon />, path: '/menu' },
+    { text: 'Inventory', icon: <InventoryIcon />, path: '/inventory' },
+    { text: 'Suppliers', icon: <LocalShippingIcon />, path: '/suppliers' },
+    { text: 'Reports', icon: <AssessmentIcon />, path: '/reports' },
   ];
 
   return (

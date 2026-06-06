@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: ashn_pos_db
+    environment:
+      POSTGRES_USER: erp_user
+      POSTGRES_PASSWORD: supersecretpassword
+      POSTGRES_DB: ashn_pos
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - erp-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: ashn_pos_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    networks:
+      - erp-network
+    restart: unless-stopped
+
+  backend:
+    build: 
+      context: ./backend
+    container_name: ashn_pos_api
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://erp_user:supersecretpassword@postgres:5432/ashn_pos?schema=public
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=production_secret_key_change_me
+      - PORT=3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - erp-network
+    restart: unless-stopped
+
+  admin-web:
+    build:
+      context: ./admin-web
+    container_name: ashn_pos_admin
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - erp-network
+    restart: unless-stopped
+
+networks:
+  erp-network:
+    driver: bridge
+
+volumes:
+  pgdata:
+  redisdata:

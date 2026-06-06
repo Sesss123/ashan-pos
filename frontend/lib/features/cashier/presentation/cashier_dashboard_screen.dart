@@ -1,14 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/realtime/socket_provider.dart';
+import '../../../../core/realtime/socket_events.dart';
 
-class CashierDashboardScreen extends ConsumerWidget {
+class CashierDashboardScreen extends ConsumerStatefulWidget {
   const CashierDashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CashierDashboardScreen> createState() => _CashierDashboardScreenState();
+}
+
+class _CashierDashboardScreenState extends ConsumerState<CashierDashboardScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Connect to Enterprise Real-Time Sync on mount
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final socket = ref.read(socketServiceProvider);
+      socket.connect('placeholder-jwt-token');
+      
+      socket.on(SocketEvents.orderCreated, (data) {
+        debugPrint('[POS] New Order Synced via WebSockets!');
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Cashier POS'),
+        title: const Text('Cashier POS (Real-Time Synced)'),
         actions: [
           IconButton(icon: const Icon(Icons.receipt_long), onPressed: () {}), // Receipt History
           IconButton(icon: const Icon(Icons.point_of_sale), onPressed: () {}), // Daily Closing

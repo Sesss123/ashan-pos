@@ -19,18 +19,52 @@ model User {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  sessions  Session[]
-  orders    Order[]
+  sessions        Session[]
+  devices         Device[]
+  loginHistories  LoginHistory[]
+  orders          Order[]
 }
 
 model Session {
   id        String   @id @default(uuid())
   userId    String
   token     String   @unique
+  deviceIp  String?
+  userAgent String?
   expiresAt DateTime
   createdAt DateTime @default(now())
   
   user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId, token])
+}
+
+model Device {
+  id        String   @id @default(uuid())
+  userId    String
+  deviceId  String   @unique
+  os        String?
+  browser   String?
+  lastIp    String?
+  lastLogin DateTime @default(now())
+  isTrusted Boolean  @default(false)
+
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId, deviceId])
+}
+
+model LoginHistory {
+  id        String   @id @default(uuid())
+  userId    String
+  ipAddress String
+  userAgent String
+  status    String   // SUCCESS, FAILED
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
 }
 
 model Category {
@@ -41,6 +75,8 @@ model Category {
   deletedAt DateTime?
   
   products  Product[]
+
+  @@index([isActive, isDeleted])
 }
 
 model Product {
@@ -55,6 +91,8 @@ model Product {
 
   category   Category  @relation(fields: [categoryId], references: [id])
   orderItems OrderItem[]
+
+  @@index([categoryId, isActive])
 }
 
 model Order {
@@ -74,6 +112,9 @@ model Order {
   payments   Payment[]
   receipts   Receipt[]
   kitchenOrders KitchenOrder[]
+
+  @@index([status, createdAt])
+  @@index([userId, type])
 }
 
 model OrderItem {
@@ -85,6 +126,8 @@ model OrderItem {
 
   order     Order   @relation(fields: [orderId], references: [id])
   product   Product @relation(fields: [productId], references: [id])
+
+  @@index([orderId, productId])
 }
 
 model Payment {
@@ -95,6 +138,8 @@ model Payment {
   createdAt DateTime @default(now())
 
   order     Order    @relation(fields: [orderId], references: [id])
+
+  @@index([method, createdAt])
 }
 
 model Receipt {
@@ -104,6 +149,8 @@ model Receipt {
   createdAt DateTime @default(now())
 
   order     Order    @relation(fields: [orderId], references: [id])
+
+  @@index([receiptNo])
 }
 
 model Table {
@@ -111,6 +158,8 @@ model Table {
   name      String
   status    String  // Available, Occupied, Cleaning
   orders    Order[]
+
+  @@index([status])
 }
 
 model KitchenOrder {
@@ -120,6 +169,8 @@ model KitchenOrder {
   createdAt DateTime @default(now())
 
   order     Order    @relation(fields: [orderId], references: [id])
+
+  @@index([status, createdAt])
 }
 
 model InventoryItem {
@@ -129,6 +180,8 @@ model InventoryItem {
   minStock  Int
 
   movements InventoryMovement[]
+
+  @@index([quantity])
 }
 
 model InventoryMovement {
@@ -139,6 +192,8 @@ model InventoryMovement {
   createdAt DateTime      @default(now())
 
   item      InventoryItem @relation(fields: [itemId], references: [id])
+
+  @@index([itemId, type])
 }
 
 model Supplier {
@@ -156,6 +211,8 @@ model PurchaseOrder {
 
   supplier   Supplier @relation(fields: [supplierId], references: [id])
   items      PurchaseItem[]
+
+  @@index([supplierId, status])
 }
 
 model PurchaseItem {
@@ -173,6 +230,8 @@ model Customer {
   name      String
   phone     String   @unique
   credit    Float    @default(0)
+
+  @@index([phone])
 }
 
 model Notification {
@@ -180,11 +239,17 @@ model Notification {
   message   String
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
+
+  @@index([isRead, createdAt])
 }
 
 model AuditLog {
   id        String   @id @default(uuid())
+  userId    String?
   action    String
   details   String
+  ipAddress String?
   createdAt DateTime @default(now())
+
+  @@index([userId, action, createdAt])
 }
