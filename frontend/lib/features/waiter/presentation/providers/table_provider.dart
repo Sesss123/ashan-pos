@@ -1,4 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/network/dio_client.dart';
+import '../../../../core/realtime/socket_service.dart';
 
 class DiningTable {
   final String id;
@@ -12,33 +14,39 @@ class DiningTable {
     required this.capacity,
     required this.status,
   });
-}
 
-class TableNotifier extends StateNotifier<List<DiningTable>> {
-  TableNotifier() : super([
-    DiningTable(id: 't1', number: 1, capacity: 4, status: 'Available'),
-    DiningTable(id: 't2', number: 2, capacity: 2, status: 'Occupied'),
-    DiningTable(id: 't3', number: 3, capacity: 6, status: 'Available'),
-    DiningTable(id: 't4', number: 4, capacity: 4, status: 'Reserved'),
-  ]);
-
-  // Method to be called by Socket.IO listener
-  void updateTableStatus(String tableId, String newStatus) {
-    state = [
-      for (final table in state)
-        if (table.id == tableId)
-          DiningTable(
-            id: table.id,
-            number: table.number,
-            capacity: table.capacity,
-            status: newStatus,
-          )
-        else
-          table,
-    ];
+  factory DiningTable.fromJson(Map<String, dynamic> json) {
+    return DiningTable(
+      id: json['id'].toString(),
+      number: int.tryParse(json['name'].toString().replaceAll(RegExp(r'[^0-9]'), '')) ?? 0,
+      capacity: json['capacity'] ?? 4,
+      status: json['status'] ?? 'Available',
+    );
   }
 }
 
-final tableProvider = StateNotifierProvider<TableNotifier, List<DiningTable>>((ref) {
+class TableNotifier extends AsyncNotifier<List<DiningTable>> {
+  @override
+  Future<List<DiningTable>> build() async {
+    socketService.on('table.updated', (data) {
+      ref.invalidateSelf();
+    });
+
+    ref.onDispose(() {
+      socketService.off('table.updated');
+    });
+
+    return _fetchTables();
+  }
+
+  Future<List<DiningTable>> _fetchTables() async {
+    final dio = ref.read(dioClientProvider).dio;
+    final response = await dio.get('/pos/tables');
+    final data = response.data['data'] as List<dynamic>;
+    return data.map((json) => DiningTable.fromJson(json)).toList();
+  }
+}
+
+final tableProvider = AsyncNotifierProvider<TableNotifier, List<DiningTable>>(() {
   return TableNotifier();
 });

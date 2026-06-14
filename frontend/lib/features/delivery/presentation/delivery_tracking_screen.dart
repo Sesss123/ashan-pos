@@ -1,31 +1,46 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'providers/delivery_provider.dart';
 
-class DeliveryTrackingScreen extends StatelessWidget {
+class DeliveryTrackingScreen extends ConsumerWidget {
   const DeliveryTrackingScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final deliveryStateAsync = ref.watch(deliveryProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Delivery Management (Kanban)'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () => ref.invalidate(deliveryProvider),
+          ),
+          const SizedBox(width: 16),
+        ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildColumn('Pending Assignment', Colors.orange, 3),
-            const SizedBox(width: 16),
-            _buildColumn('Dispatched (In Transit)', Colors.blue, 2),
-            const SizedBox(width: 16),
-            _buildColumn('Delivered', Colors.green, 5),
-          ],
+      body: deliveryStateAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, stack) => Center(child: Text('Error loading deliveries: $err')),
+        data: (state) => Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildColumn('Pending Assignment', Colors.orange, state.pending, ref, context, []),
+              const SizedBox(width: 16),
+              _buildColumn('Dispatched (In Transit)', Colors.blue, state.outForDelivery, ref, context, []),
+              const SizedBox(width: 16),
+              _buildColumn('Delivered', Colors.green, state.delivered, ref, context, []),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildColumn(String title, Color color, int itemCount) {
+  Widget _buildColumn(String title, Color color, List<dynamic> items, WidgetRef ref, BuildContext context, List<dynamic> drivers) {
     return Expanded(
       child: Container(
         decoration: BoxDecoration(
@@ -38,22 +53,23 @@ class DeliveryTrackingScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: color)),
-                  CircleAvatar(radius: 12, backgroundColor: color, child: Text('$itemCount', style: const TextStyle(fontSize: 12, color: Colors.white))),
+                  CircleAvatar(radius: 12, backgroundColor: color, child: Text('${items.length}', style: const TextStyle(fontSize: 12, color: Colors.white))),
                 ],
               ),
             ),
             Expanded(
               child: ListView.builder(
                 padding: const EdgeInsets.all(8),
-                itemCount: itemCount,
+                itemCount: items.length,
                 itemBuilder: (context, index) {
+                  final item = items[index];
                   return Card(
                     elevation: 2,
                     margin: const EdgeInsets.only(bottom: 8),
@@ -62,22 +78,24 @@ class DeliveryTrackingScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Order #10045', style: TextStyle(fontWeight: FontWeight.bold)),
+                          Text('Order #${item['orderId'] ?? 'Unknown'}', style: const TextStyle(fontWeight: FontWeight.bold)),
                           const SizedBox(height: 4),
-                          const Text('123 Main St, Springfield', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                          Text(item['address'] ?? 'No Address', style: const TextStyle(fontSize: 12, color: Colors.grey)),
                           const Divider(),
                           if (title == 'Pending Assignment')
                             ElevatedButton(
-                              onPressed: () {},
+                              onPressed: () {
+                                _showAssignDriverDialog(context, ref, item['id'], drivers);
+                              },
                               style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(36)),
                               child: const Text('Assign Rider'),
                             )
                           else
-                            const Row(
+                            Row(
                               children: [
-                                Icon(Icons.two_wheeler, size: 16, color: Colors.blue),
-                                SizedBox(width: 4),
-                                Text('Rider: Mike D.', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                const Icon(Icons.two_wheeler, size: 16, color: Colors.blue),
+                                const SizedBox(width: 4),
+                                Text('Rider: ${item['rider']?['name'] ?? 'Unknown'}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                               ],
                             )
                         ],
@@ -90,6 +108,35 @@ class DeliveryTrackingScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  void _showAssignDriverDialog(BuildContext context, WidgetRef ref, String deliveryId, List<dynamic> drivers) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Assign Driver'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: drivers.length,
+              itemBuilder: (context, index) {
+                final driver = drivers[index];
+                return ListTile(
+                  title: Text(driver['name']),
+                  subtitle: Text(driver['status'] ?? 'Available'),
+                  onTap: () {
+                    ref.read(deliveryProvider.notifier).updateStatus(deliveryId, 'Out for Delivery');
+                    Navigator.pop(context);
+                  },
+                );
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 }

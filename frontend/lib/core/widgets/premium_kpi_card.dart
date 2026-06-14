@@ -28,7 +28,7 @@ class PremiumKpiCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
         boxShadow: [
-          if (!isDark) BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 24, offset: const Offset(0, 4))
+          if (!isDark) BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 24, offset: const Offset(0, 4))
         ],
       ),
       child: Column(
@@ -41,7 +41,7 @@ class PremiumKpiCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon, color: AppColors.primary, size: 20),

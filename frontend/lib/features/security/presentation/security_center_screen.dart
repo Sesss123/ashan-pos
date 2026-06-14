@@ -43,7 +43,7 @@ class SecurityCenterScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: DataTable(
-                headingRowColor: MaterialStateProperty.all(Colors.grey.shade100),
+                headingRowColor: WidgetStateProperty.all(Colors.grey.shade100),
                 columns: const [
                   DataColumn(label: Text('User')),
                   DataColumn(label: Text('Device/Browser')),
@@ -71,12 +71,12 @@ class SecurityCenterScreen extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
           boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
         ),
         child: Row(
           children: [
-            CircleAvatar(backgroundColor: color.withOpacity(0.1), radius: 30, child: Icon(icon, color: color, size: 30)),
+            CircleAvatar(backgroundColor: color.withValues(alpha: 0.1), radius: 30, child: Icon(icon, color: color, size: 30)),
             const SizedBox(width: 16),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,

@@ -3,26 +3,42 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
 model User {
   id        String    @id @default(uuid())
+  tenantId String
+  branchId  String?
+  rolePolicyId String?
   name      String
   email     String    @unique
   password  String
   role      String    // Cashier, Waiter, Kitchen, Admin
+  isEmailVerified Boolean @default(false)
+  resetPasswordToken String?
+  resetPasswordExpires DateTime?
   isActive  Boolean   @default(true)
   isDeleted Boolean   @default(false)
   deletedAt DateTime?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
+  branch          Branch?        @relation(fields: [branchId], references: [id])
+  rolePolicy      RolePolicy?    @relation(fields: [rolePolicyId], references: [id])
+  userBranches    UserBranch[]
   sessions        Session[]
   devices         Device[]
   loginHistories  LoginHistory[]
   orders          Order[]
+  shifts          Shift[]
+  expenses        Expense[]
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  @@index([tenantId])
+
+
+  @@index([branchId])
 }
 
 model Session {
@@ -69,52 +85,80 @@ model LoginHistory {
 
 model Category {
   id        String    @id @default(uuid())
+  tenantId String
   name      String
   isActive  Boolean   @default(true)
   isDeleted Boolean   @default(false)
   deletedAt DateTime?
   
   products  Product[]
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  @@index([tenantId])
+
 
   @@index([isActive, isDeleted])
 }
 
 model Product {
   id         String    @id @default(uuid())
+  tenantId String
   categoryId String
   name       String
   price      Float
+  stock      Int       @default(0)
   barcode    String?
+  recipe     String?
   isActive   Boolean   @default(true)
+  requiresKitchen Boolean @default(true)
   isDeleted  Boolean   @default(false)
   deletedAt  DateTime?
 
   category   Category  @relation(fields: [categoryId], references: [id])
   orderItems OrderItem[]
+  ingredients ProductIngredient[]
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  @@index([tenantId])
+
 
   @@index([categoryId, isActive])
 }
 
 model Order {
   id         String      @id @default(uuid())
+  tenantId String
+  branchId   String?
   userId     String      // Cashier or Waiter
   tableId    String?     
   status     String      // Pending, Completed, Cancelled
   total      Float
-  type       String      // Dining, Takeaway, Delivery
-  isDeleted  Boolean     @default(false)
+  subtotal       Float?
+  taxAmount      Float?
+  serviceCharge  Float?      @default(0)
+  discountAmount Float?      @default(0)
+  type           String      // Dining, Takeaway, Delivery
+  notes          String?
+  deliveryAddress String?
+  customerId     String?
+  isDeleted      Boolean     @default(false)
   deletedAt  DateTime?
   createdAt  DateTime    @default(now())
 
   user       User        @relation(fields: [userId], references: [id])
   table      Table?      @relation(fields: [tableId], references: [id])
+  branch     Branch?     @relation(fields: [branchId], references: [id])
+  customer   Customer?   @relation(fields: [customerId], references: [id])
   items      OrderItem[]
   payments   Payment[]
   receipts   Receipt[]
   kitchenOrders KitchenOrder[]
+  tableOrders   TableOrder[]
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  @@index([tenantId])
+
 
   @@index([status, createdAt])
   @@index([userId, type])
+  @@index([branchId])
 }
 
 model OrderItem {
@@ -123,6 +167,9 @@ model OrderItem {
   productId String
   quantity  Int
   price     Float
+  unitPrice Float?
+  subtotal  Float?
+  notes     String?
 
   order     Order   @relation(fields: [orderId], references: [id])
   product   Product @relation(fields: [productId], references: [id])
@@ -155,62 +202,177 @@ model Receipt {
 
 model Table {
   id        String  @id @default(uuid())
+  tenantId String
   name      String
+  branchId  String?
   status    String  // Available, Occupied, Cleaning
+  
+  branch    Branch? @relation(fields: [branchId], references: [id])
   orders    Order[]
+  tableOrders TableOrder[]
+  transfersFrom TableTransfer[] @relation("FromTable")
+  transfersTo   TableTransfer[] @relation("ToTable")
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  @@index([tenantId])
+
 
   @@index([status])
+  @@index([branchId])
+}
+
+model TableOrder {
+  id        String   @id @default(uuid())
+  tableId   String
+  orderId   String
+  waiterId  String
+  status    String   @default("Active") // Active, Closed
+  createdAt DateTime @default(now())
+
+  table     Table    @relation(fields: [tableId], references: [id])
+  order     Order    @relation(fields: [orderId], references: [id])
+
+  @@index([tableId, status])
+}
+
+model TableTransfer {
+  id            String   @id @default(uuid())
+  fromTableId   String
+  toTableId     String
+  orderId       String
+  transferredBy String
+  createdAt     DateTime @default(now())
+
+  fromTable     Table    @relation("FromTable", fields: [fromTableId], references: [id])
+  toTable       Table    @relation("ToTable", fields: [toTableId], references: [id])
+
+  @@index([fromTableId, toTableId])
 }
 
 model KitchenOrder {
   id        String   @id @default(uuid())
   orderId   String
+  branchId  String?
+  priority  String   @default("Normal")
   status    String   // Pending, Preparing, Ready, Completed
   createdAt DateTime @default(now())
 
   order     Order    @relation(fields: [orderId], references: [id])
+  branch    Branch?  @relation(fields: [branchId], references: [id])
 
   @@index([status, createdAt])
+  @@index([branchId])
 }
 
 model InventoryItem {
   id        String   @id @default(uuid())
+  tenantId String
+  sku       String?  @unique
   name      String
+  categoryId String?
+  branchId  String?
   quantity  Int
   minStock  Int
+  unitCost  Float    @default(0)
+  unit      String   @default("pcs")
 
+  branch    Branch?  @relation(fields: [branchId], references: [id])
   movements InventoryMovement[]
+  purchaseItems PurchaseItem[]
+  stockAlerts StockAlert[]
+  productIngredients ProductIngredient[]
+  transfers InventoryTransfer[]
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  @@index([tenantId])
+
 
   @@index([quantity])
+  @@index([categoryId])
+  @@index([branchId])
 }
 
 model InventoryMovement {
-  id        String        @id @default(uuid())
-  itemId    String
-  type      String        // IN, OUT
-  quantity  Int
-  createdAt DateTime      @default(now())
+  id          String   @id @default(uuid())
+  itemId      String
+  type        String   // IN, OUT, ADJUSTMENT, SPOILAGE, TRANSFER
+  quantity    Float
+  reason      String?
+  userId      String?
+  createdAt   DateTime @default(now())
 
-  item      InventoryItem @relation(fields: [itemId], references: [id])
-
+  item        InventoryItem @relation(fields: [itemId], references: [id])
   @@index([itemId, type])
 }
 
+model StockAlert {
+  id          String   @id @default(uuid())
+  tenantId    String
+  branchId    String?
+  itemId      String
+  itemName    String
+  currentStock Float
+  reorderLevel Float
+  status      String   @default("Active") // Active, Resolved, Ignored
+  resolvedAt  DateTime?
+  createdAt   DateTime @default(now())
+
+  item        InventoryItem @relation(fields: [itemId], references: [id])
+  tenant      Tenant @relation(fields: [tenantId], references: [id])
+  branch      Branch? @relation(fields: [branchId], references: [id])
+  @@index([tenantId, status])
+}
+
+model InventoryTransfer {
+  id             String   @id @default(uuid())
+  inventoryItemId String
+  fromBranchId   String
+  toBranchId     String
+  quantity       Int
+  transferredBy  String?
+  createdAt      DateTime @default(now())
+
+  item           InventoryItem @relation(fields: [inventoryItemId], references: [id])
+  fromBranch     Branch        @relation("TransfersFrom", fields: [fromBranchId], references: [id])
+  toBranch       Branch        @relation("TransfersTo", fields: [toBranchId], references: [id])
+
+  @@index([inventoryItemId])
+  @@index([fromBranchId])
+  @@index([toBranchId])
+}
+
 model Supplier {
-  id        String   @id @default(uuid())
-  name      String
-  contact   String
-  orders    PurchaseOrder[]
+  id                 String          @id @default(uuid())
+  tenantId String
+  name               String
+  contact            String
+  email              String?
+  phone              String?
+  address            String?
+  trn                String?         // Tax Registration Number
+  creditLimit        Float           @default(0)
+  outstandingBalance Float           @default(0)
+  branchId           String?
+  branch             Branch?         @relation(fields: [branchId], references: [id])
+  orders             PurchaseOrder[]
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  @@index([tenantId])
+
+
+  @@index([branchId])
 }
 
 model PurchaseOrder {
   id         String   @id @default(uuid())
   supplierId String
-  status     String
+  status     String   // Draft, Pending_Approval, Approved, Sent_To_Supplier, Partially_Received, Completed, Cancelled
+  taxAmount  Float    @default(0)
+  totalAmount Float   @default(0)
+  branchId   String?
+  approvedBy String?
   createdAt  DateTime @default(now())
 
   supplier   Supplier @relation(fields: [supplierId], references: [id])
   items      PurchaseItem[]
+  receipts   PurchaseReceipt[]
 
   @@index([supplierId, status])
 }
@@ -218,38 +380,302 @@ model PurchaseOrder {
 model PurchaseItem {
   id        String @id @default(uuid())
   orderId   String
+  itemId    String?
   itemName  String
   quantity  Int
   cost      Float
+  taxRate   Float  @default(0)
 
   order     PurchaseOrder @relation(fields: [orderId], references: [id])
+  item      InventoryItem? @relation(fields: [itemId], references: [id])
+
+  @@index([itemId])
 }
 
 model Customer {
   id        String   @id @default(uuid())
+  tenantId String
   name      String
   phone     String   @unique
   credit    Float    @default(0)
+  loyaltyPoints Int  @default(0)
+  branchId  String?
+
+  branch    Branch?  @relation(fields: [branchId], references: [id])
+  creditHistories CustomerCreditHistory[]
+  orders    Order[]
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  @@index([tenantId])
+
 
   @@index([phone])
+  @@index([branchId])
+}
+
+model CustomerCreditHistory {
+  id          String   @id @default(uuid())
+  customerId  String
+  amount      Float
+  type        String   // ADD, SETTLE
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  customer    Customer @relation(fields: [customerId], references: [id])
+
+  @@index([customerId, createdAt])
 }
 
 model Notification {
   id        String   @id @default(uuid())
+  tenantId String
   message   String
   isRead    Boolean  @default(false)
+  category  String   @default("System") // Orders, Inventory, Purchases, Customers, Security, System
+  priority  String   @default("Medium") // High, Medium, Low
+  userId    String?
   createdAt DateTime @default(now())
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  @@index([tenantId])
+
 
   @@index([isRead, createdAt])
 }
 
 model AuditLog {
   id        String   @id @default(uuid())
+  tenantId String
   userId    String?
+  branchId  String?
+  module    String?
   action    String
   details   String
+  oldValue  String?
+  newValue  String?
   ipAddress String?
   createdAt DateTime @default(now())
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  @@index([tenantId])
+
 
   @@index([userId, action, createdAt])
+}
+
+model Shift {
+  id              String   @id @default(uuid())
+  tenantId String
+  userId          String
+  startTime       DateTime @default(now())
+  endTime         DateTime?
+  openingCash     Float
+  expectedCash    Float?
+  actualCash      Float?
+  difference      Float?
+  status          String   @default("OPEN") // OPEN, CLOSED
+  totalOrders     Int      @default(0)
+  totalSales      Float    @default(0)
+  cashPayments    Float    @default(0)
+  cardPayments    Float    @default(0)
+  creditSales     Float    @default(0)
+  taxCollected    Float    @default(0)
+  discountTotal   Float    @default(0)
+
+  user            User     @relation(fields: [userId], references: [id])
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  @@index([tenantId])
+
+
+  @@index([userId, status])
+}
+
+// ==========================================
+// Enterprise Modules
+// ==========================================
+
+model Branch {
+  id        String   @id @default(uuid())
+  tenantId String
+  name      String
+  location  String?
+  contact   String?
+  taxRate   Float?   @default(0)
+  currency  String?  @default("LKR")
+  timezone  String?  @default("Asia/Colombo")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  users          User[]
+  userBranches   UserBranch[]
+  orders         Order[]
+  tables         Table[]
+  inventoryItems InventoryItem[]
+  kitchenOrders  KitchenOrder[]
+  suppliers      Supplier[]
+  customers      Customer[]
+  expenses       Expense[]
+  stockAlerts    StockAlert[]
+  transfersFrom  InventoryTransfer[] @relation("TransfersFrom")
+  transfersTo    InventoryTransfer[] @relation("TransfersTo")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+}
+
+model SystemSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  group     String   @default("General")
+  updatedAt DateTime @updatedAt
+}
+
+model BackupLog {
+  id        String   @id @default(uuid())
+  fileUrl   String
+  status    String   // Success, Failed
+  sizeBytes Int?
+  createdAt DateTime @default(now())
+}
+
+model UserBranch {
+  userId    String
+  branchId  String
+  isPrimary Boolean @default(false)
+
+  user      User    @relation(fields: [userId], references: [id])
+  branch    Branch  @relation(fields: [branchId], references: [id])
+
+  @@id([userId, branchId])
+  @@index([userId])
+  @@index([branchId])
+}
+
+model RolePolicy {
+  id          String   @id @default(uuid())
+  tenantId String
+  name        String   @unique
+  permissions String   // JSON string representing roles/permissions permissions mapping
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  users       User[]
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+}
+
+model ProductIngredient {
+  id              String        @id @default(uuid())
+  productId       String
+  inventoryItemId String
+  quantityNeeded  Int           // Stock units consumed per order item preparation
+  
+  product         Product       @relation(fields: [productId], references: [id])
+  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id])
+
+  @@unique([productId, inventoryItemId])
+  @@index([productId])
+  @@index([inventoryItemId])
+}
+
+model PurchaseReceipt {
+  id              String   @id @default(uuid())
+  purchaseOrderId String
+  receivedBy      String?
+  receivedAt      DateTime @default(now())
+  notes           String?
+  
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  items           PurchaseReceiptItem[]
+
+  @@index([purchaseOrderId])
+}
+
+model PurchaseReceiptItem {
+  id                String   @id @default(uuid())
+  purchaseReceiptId String
+  itemId            String?
+  itemName          String
+  quantityReceived  Int
+
+  purchaseReceipt   PurchaseReceipt @relation(fields: [purchaseReceiptId], references: [id])
+
+  @@index([purchaseReceiptId])
+}
+
+model SystemSettingHistory {
+  id        String   @id @default(uuid())
+  settingId String
+  key       String
+  oldValue  String?
+  newValue  String
+  changedBy String?
+  createdAt DateTime @default(now())
+
+  @@index([settingId])
+}
+
+model Reservation {
+  id           String   @id @default(uuid())
+  customerName String
+  phone        String?
+  date         DateTime
+  guests       Int
+  notes        String?
+  status       String   @default("Pending") // Pending, CheckedIn, Cancelled
+  tableId      String?
+  branchId     String?
+  createdAt    DateTime @default(now())
+
+  @@index([date, status])
+}
+
+
+model Expense {
+  id          String   @id @default(uuid())
+  tenantId    String
+  branchId    String
+  userId      String   
+  amount      Float
+  category    String   // Petty Cash, Supplies, etc.
+  notes       String?
+  date        DateTime @default(now())
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  branch      Branch   @relation(fields: [branchId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@index([tenantId, branchId, date])
+}
+
+// ==========================================
+// SAAS MULTI-TENANT ARCHITECTURE
+// ==========================================
+
+model Tenant {
+  id          String   @id @default(uuid())
+  name        String
+  plan        String   @default("Basic") // Basic, Pro, Enterprise
+  maxBranches Int      @default(1)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  users           User[]
+  branches        Branch[]
+  categories      Category[]
+  products        Product[]
+  orders          Order[]
+  tables          Table[]
+  inventoryItems  InventoryItem[]
+  suppliers       Supplier[]
+  customers       Customer[]
+  shifts          Shift[]
+  rolePolicies    RolePolicy[]
+  notifications   Notification[]
+  auditLogs       AuditLog[]
+  expenses        Expense[]
+  stockAlerts     StockAlert[]
 }

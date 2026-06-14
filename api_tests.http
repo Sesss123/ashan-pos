@@ -1,0 +1,379 @@
+### REST Client API Tests (VS Code)
+### Install "REST Client" extension in VS Code to run these requests easily.
+
+@baseUrl = http://localhost:5000/api
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4NjNmZmY1LWJmODItNGJlNS1hYzE2LWNkMGFmZjBkNzhiZCIsInJvbGUiOiJPd25lciIsIm5hbWUiOiJTdXBlciBBZG1pbiIsImJyYW5jaElkIjoiNGI0YjllMTctY2NhYi00YjVkLTgxNWMtY2NmY2UzM2IwNGVjIiwidGVuYW50SWQiOiI3OGNhNWU3YS1kYTI2LTQ1ZGEtOGFmMC0zOTkwZTFmNjlkYmUiLCJwZXJtaXNzaW9ucyI6WyIqIl0sImlhdCI6MTc4MTQyNTA3OSwiZXhwIjoxNzgyMDI5ODc5fQ.zgxS09RFYOtqd0P29pfu5PrN9-gHPaFvBaAxpZdMap4
+
+### ==========================================
+### 1. AUTHENTICATION
+### ==========================================
+
+# Login (Admin/Cashier/etc)
+# @name login
+# Register New Account
+POST {{baseUrl}}/v1/auth/register
+Content-Type: application/json
+
+{
+  "companyName": "My Awesome Restaurant",
+  "userName": "Super Admin",
+  "email": "testadmin@gmail.com",
+  "password": "strongpassword123"
+}
+
+
+### (After login, copy the token from the response and replace @token value at the top)
+
+# Logout
+POST {{baseUrl}}/v1/auth/logout
+Authorization: Bearer {{token}}
+
+### ==========================================
+### 2. MENU & INVENTORY
+### ==========================================
+
+# 1. Create a Category First
+POST {{baseUrl}}/v1/menu/categories
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Main Courses",
+  "isActive": true
+}
+
+###
+# 2. Get All Categories (Copy the ID from the response)
+GET {{baseUrl}}/v1/menu/categories
+Authorization: Bearer {{token}}
+
+###
+# 3. Create a Product (Replace categoryId with the ID from above)
+POST {{baseUrl}}/v1/menu/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "categoryId": "13a95af3-a8fc-4c10-92c6-9db43ba6b753",
+  "name": "Chicken Kottu",
+  "price": 1500,
+  "stock": 50,
+  "barcode": "KOT-001",
+  "isActive": true,
+  "requiresKitchen": true
+}
+
+###
+# 4. Get All Products (Copy the ID for Orders)
+GET {{baseUrl}}/v1/menu/products
+Authorization: Bearer {{token}}
+
+### ==========================================
+### 3. POS & ORDERS
+### ==========================================
+
+# Get All Tables (Copy the ID for Orders)
+GET {{baseUrl}}/v1/pos/tables
+Authorization: Bearer {{token}}
+
+###
+# Create a Dining Order (Replace tableId and productId)
+POST {{baseUrl}}/v1/orders/dining
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "tableId": "c6161c7e-b9b6-4521-89c2-37671293f7a7",
+  "items": [
+    {
+      "productId": "0b93f1e0-7b1f-4e38-b02b-ee66d60ff4d7",
+      "quantity": 2,
+      "price": 1500
+    }
+  ]
+}
+
+###
+# Get Running Orders
+GET {{baseUrl}}/v1/orders/running
+Authorization: Bearer {{token}}
+
+### ==========================================
+### 4. USERS & ROLES
+### ==========================================
+
+# Get All Users
+GET {{baseUrl}}/v1/users
+Authorization: Bearer {{token}}
+
+###
+# Get All Roles
+GET {{baseUrl}}/v1/roles
+Authorization: Bearer {{token}}
+
+### ==========================================
+### 5. CUSTOMERS
+### ==========================================
+
+# Create Customer
+POST {{baseUrl}}/v1/pos/customers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "snajana Perera",
+  "phone": "0774245205",
+  "email": "chuti@example.com"
+}
+
+###
+# Get All Customers
+GET {{baseUrl}}/v1/pos/customers/search
+Authorization: Bearer {{token}}
+
+### ==========================================
+### 6. REPORTS & AUDIT LOGS
+### ==========================================
+
+# Get Audit Logs
+GET {{baseUrl}}/v1/audit/logs
+Authorization: Bearer {{token}}
+
+###
+# Get Settings
+GET {{baseUrl}}/v1/settings
+Authorization: Bearer {{token}}
+
+### ==========================================
+### 7. ADVANCED POS OPERATIONS
+### ==========================================
+
+# Open Shift (Daily Closing)
+POST {{baseUrl}}/v1/pos/daily-closing/open
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "openingCash": 5000
+}
+
+###
+# Checkout Table (Pay the Bill)
+POST {{baseUrl}}/v1/pos/tables/c6161c7e-b9b6-4521-89c2-37671293f7a7/checkout
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "payments": [
+    {
+      "method": "Cash",
+      "amount": 1500
+    }
+  ]
+}
+
+###
+# Get Receipt History
+GET {{baseUrl}}/v1/pos/receipts?dateRange=today
+Authorization: Bearer {{token}}
+
+###
+# Close Shift
+POST {{baseUrl}}/v1/pos/daily-closing/close
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "shiftId": "b97afd49-74c6-42cc-b800-f44d881dc3b9",
+  "actualCash": 6500
+}
+
+### ==========================================
+### 8. ADMIN WEB APIS
+### ==========================================
+
+# Dashboard Stats (Overview)
+GET {{baseUrl}}/v1/admin/dashboard/stats
+Authorization: Bearer {{token}}
+
+###
+# Get All Branches
+GET {{baseUrl}}/v1/admin/branches
+Authorization: Bearer {{token}}
+
+###
+# Get All Suppliers
+GET {{baseUrl}}/v1/supplier/suppliers
+Authorization: Bearer {{token}}
+
+###
+# Get All Purchases
+GET {{baseUrl}}/v1/inventory/purchase-orders
+Authorization: Bearer {{token}}
+
+###
+# Analytics - Sales Chart Data
+GET {{baseUrl}}/v1/analytics/sales-chart?timeframe=weekly
+Authorization: Bearer {{token}}
+
+### ==========================================
+### 9. KITCHEN MODULE (KDS)
+### ==========================================
+
+# Get Kitchen Queue
+GET {{baseUrl}}/v1/kitchen/queue
+Authorization: Bearer {{token}}
+
+###
+# Update Order Status (Pending -> Preparing -> Ready)
+PUT {{baseUrl}}/v1/kitchen/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "orderId": "REPLACE_WITH_ORDER_ID",
+  "status": "Preparing"
+}
+
+### ==========================================
+### 10. INVENTORY & STOCK
+### ==========================================
+
+# Add Inventory Item
+POST {{baseUrl}}/v1/inventory/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Basmati Rice",
+  "sku": "RICE-001",
+  "unit": "KG",
+  "cost": 300,
+  "stock": 50,
+  "reorderLevel": 10
+}
+
+###
+# Get All Inventory Items
+GET {{baseUrl}}/v1/inventory/items
+Authorization: Bearer {{token}}
+
+###
+# Transfer Stock (Multi-Branch)
+POST {{baseUrl}}/v1/inventory/transfer
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "fromBranchId": "HEAD_OFFICE_ID",
+  "toBranchId": "TARGET_BRANCH_ID",
+  "itemId": "ITEM_ID",
+  "quantity": 10
+}
+
+### ==========================================
+### 11. SUPPLIERS & PURCHASES
+### ==========================================
+
+# Create Supplier
+POST {{baseUrl}}/v1/supplier/suppliers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Cargills Food City",
+  "contact": "0112345678",
+  "email": "supply@cargills.com",
+  "address": "Colombo 02",
+  "creditLimit": 100000
+}
+
+###
+# Create Purchase Order
+POST {{baseUrl}}/v1/inventory/purchase-orders
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "supplierId": "SUPPLIER_ID",
+  "items": [
+    {
+      "itemId": "INVENTORY_ITEM_ID",
+      "quantity": 50,
+      "unitCost": 300
+    }
+  ]
+}
+
+###
+# Receive Purchase Order (Goods Receipt)
+POST {{baseUrl}}/v1/inventory/receive
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "poId": "PURCHASE_ORDER_ID",
+  "receivedItems": [
+    {
+      "itemId": "INVENTORY_ITEM_ID",
+      "quantity": 50
+    }
+  ]
+}
+
+### ==========================================
+### 12. DELIVERY SYSTEM
+### ==========================================
+
+# Create Delivery Order
+POST {{baseUrl}}/v1/customer-delivery/orders
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "customerId": "CUSTOMER_ID",
+  "address": "123, Galle Road",
+  "items": [
+    {
+      "productId": "PRODUCT_ID",
+      "quantity": 1,
+      "price": 1500
+    }
+  ]
+}
+
+###
+# Get Delivery Orders
+GET {{baseUrl}}/v1/customer-delivery/orders
+Authorization: Bearer {{token}}
+
+### ==========================================
+### 13. SECURITY & BACKUPS
+### ==========================================
+
+# Get Active Devices/Sessions
+GET {{baseUrl}}/v1/security/devices
+Authorization: Bearer {{token}}
+
+###
+# Force Create Backup
+POST {{baseUrl}}/v1/backup/create
+Authorization: Bearer {{token}}
+
+###
+# Get Backup History
+GET {{baseUrl}}/v1/backup/history
+Authorization: Bearer {{token}}
+
+### ==========================================
+### 14. NOTIFICATIONS
+### ==========================================
+
+# Get My Notifications
+GET {{baseUrl}}/v1/notifications
+Authorization: Bearer {{token}}
+
+###
+# Mark All As Read
+POST {{baseUrl}}/v1/notifications/read-all
+Authorization: Bearer {{token}}

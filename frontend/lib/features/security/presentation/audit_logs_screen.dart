@@ -1,3 +1,4 @@
+import '../../../core/utils/app_currency.dart';
 import 'package:flutter/material.dart';
 
 class AuditLogsScreen extends StatelessWidget {
@@ -36,14 +37,14 @@ class AuditLogsScreen extends StatelessWidget {
               subtitle: Text(
                 isCritical 
                     ? 'User: unknown | IP: 185.12.34.5 | Reason: Invalid Credentials'
-                    : 'User: Cashier 01 | Order ID: #ORD-99${index}2 | Amount: \$45.00',
+                    : 'User: Cashier 01 | Order ID: #ORD-99${index}2 | Amount: ${AppCurrency.format(45.00)}',
               ),
               trailing: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text('2026-06-06', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
-                  Text('14:3${index}', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                  Text('14:3$index', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
                 ],
               ),
               isThreeLine: true,

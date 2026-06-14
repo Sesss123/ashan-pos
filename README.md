@@ -48,5 +48,28 @@ npm install
 npm run dev
 ```
 
+## 🖨️ Hardware & Printer Setup
+For **80mm Thermal Printers** used at the Cashier POS:
+1. When printing receipts via Browser (Chrome/Edge), set Margins to **"None"** or **"Minimum"**.
+2. Uncheck / Turn off **"Headers and Footers"**.
+3. Always perform a "Test Print" to verify paper alignment and font rendering.
+
+## 🚀 Production Deployment
+For live production environments (Ubuntu VPS), it is mandatory to follow the enterprise deployment strategy:
+- Use **Docker** to containerize the database and backend (`docker-compose up --build -d`).
+- Run Node services behind **PM2** for process management if not fully dockerized.
+- Expose via **Nginx** as a reverse proxy.
+- Secure all endpoints with **Let's Encrypt** SSL certificates.
+*(See the `handover.md` document for the complete system handover guide).*
+
+## 🧪 End-to-End Testing & Backup
+Because this system handles real financial data and live inventory:
+- **E2E Testing:** Please ensure all test scenarios in `task.md` under "End-to-end Testing" are manually verified on the live server before launch.
+- **Database Backups:** Shop owners must run the automated backup script daily:
+  ```bash
+  node backend/scripts/backupDatabaseLocal.js
+  ```
+  Ensure this script is added to your VPS cron jobs.
+
 ---
 *Developed under extreme auditing standards. Final Audit Score: Grade A+ (100/100).*

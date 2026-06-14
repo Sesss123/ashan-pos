@@ -36,7 +36,7 @@ class AdaptiveScaffold extends StatelessWidget {
           Expanded(
             child: Column(
               children: [
-                if (topNav != null) topNav!,
+                ?topNav,
                 Expanded(
                   child: ClipRRect(
                     borderRadius: isDesktop ? const BorderRadius.only(topLeft: Radius.circular(24)) : BorderRadius.zero,

@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_colors.dart';
+import '../providers/settings_provider.dart';
 
-class DesktopSidebar extends StatelessWidget {
+class DesktopSidebar extends ConsumerWidget {
   const DesktopSidebar({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settingsAsync = ref.watch(settingsProvider);
+    final appName = settingsAsync.value?.restaurantName ?? 'AshnPOS';
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
     final hoverColor = isDark ? AppColors.surfaceHoverDark : AppColors.surfaceHoverLight;
@@ -30,7 +34,7 @@ class DesktopSidebar extends StatelessWidget {
                 child: const Icon(Icons.restaurant_menu, color: Colors.white, size: 18),
               ),
               const SizedBox(width: 12),
-              Text('AshnPOS', style: Theme.of(context).textTheme.titleMedium),
+              Text(appName, style: Theme.of(context).textTheme.titleMedium),
             ],
           ),
           const SizedBox(height: 40),
@@ -51,7 +55,7 @@ class DesktopSidebar extends StatelessWidget {
 
           const Spacer(),
           // Bottom Settings Profile
-          _NavItem('Settings', Icons.settings_outlined, false),
+          _buildSingleNavItem(_NavItem('Settings', Icons.settings_outlined, false), textColor, hoverColor),
           const SizedBox(height: 8),
           ListTile(
             contentPadding: EdgeInsets.zero,
@@ -70,25 +74,29 @@ class DesktopSidebar extends StatelessWidget {
       children: [
         Text(title, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: textColor, letterSpacing: 1.2)),
         const SizedBox(height: 12),
-        ...items.map((item) => Container(
-          margin: const EdgeInsets.only(bottom: 4),
-          decoration: BoxDecoration(
-            color: item.isActive ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: ListTile(
-            dense: true,
-            leading: Icon(item.icon, color: item.isActive ? AppColors.primary : textColor, size: 20),
-            title: Text(item.title, style: TextStyle(
-              color: item.isActive ? AppColors.primary : textColor,
-              fontWeight: item.isActive ? FontWeight.bold : FontWeight.normal
-            )),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            onTap: () {},
-            hoverColor: hoverColor,
-          ),
-        )).toList(),
+        ...items.map((item) => _buildSingleNavItem(item, textColor, hoverColor)),
       ],
+    );
+  }
+
+  Widget _buildSingleNavItem(_NavItem item, Color textColor, Color hoverColor) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      decoration: BoxDecoration(
+        color: item.isActive ? AppColors.primary.withValues(alpha: 0.1) : Colors.transparent,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: ListTile(
+        dense: true,
+        leading: Icon(item.icon, color: item.isActive ? AppColors.primary : textColor, size: 20),
+        title: Text(item.title, style: TextStyle(
+          color: item.isActive ? AppColors.primary : textColor,
+          fontWeight: item.isActive ? FontWeight.bold : FontWeight.normal
+        )),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        onTap: () {},
+        hoverColor: hoverColor,
+      ),
     );
   }
 }

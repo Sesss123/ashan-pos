@@ -1,3 +1,4 @@
+import '../../../core/utils/app_currency.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'providers/executive_provider.dart';
@@ -94,7 +95,7 @@ class _ExecutiveDashboardScreenState extends ConsumerState<ExecutiveDashboardScr
               children: [
                 Expanded(child: PremiumKpiCard(
                   title: 'Total Revenue', 
-                  value: '\$${data['enterpriseRevenue'] ?? '0.00'}', 
+                  value: AppCurrency.format(data['enterpriseRevenue'] ?? '0.00'), 
                   trend: '+12.5%', 
                   isPositive: true, 
                   icon: Icons.attach_money
@@ -162,7 +163,7 @@ class _ExecutiveDashboardScreenState extends ConsumerState<ExecutiveDashboardScr
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: Colors.purple.withOpacity(0.1),
+                  color: Colors.purple.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(Icons.auto_awesome, color: Colors.purple),

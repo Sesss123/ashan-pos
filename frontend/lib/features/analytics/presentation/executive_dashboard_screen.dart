@@ -85,14 +85,14 @@ class ExecutiveDashboardScreen extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.05),
-          border: Border.all(color: color.withOpacity(0.2)),
+          color: color.withValues(alpha: 0.05),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: TextStyle(color: color.withOpacity(0.8), fontWeight: FontWeight.bold)),
+            Text(title, style: TextStyle(color: color.withValues(alpha: 0.8), fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Text(value, style: TextStyle(color: color, fontSize: 28, fontWeight: FontWeight.w900)),
             const SizedBox(height: 8),
@@ -123,7 +123,7 @@ class ExecutiveDashboardScreen extends StatelessWidget {
             title: Text(report),
             trailing: const Icon(Icons.download, size: 20, color: Colors.blue),
             onTap: () {},
-          )).toList(),
+          )),
         ],
       ),
     );

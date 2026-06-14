@@ -1,3 +1,4 @@
+import '../../../core/utils/app_currency.dart';
 import 'package:flutter/material.dart';
 
 class PurchaseOrderScreen extends StatelessWidget {
@@ -51,7 +52,7 @@ class PurchaseOrderScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     const Text('Supplier: Fresh Farms Veggies Co.', style: TextStyle(fontSize: 16)),
-                    const Text('Date: Oct 24, 2026 | Total Items: 15 | Amount: \$350.00', style: TextStyle(color: Colors.grey)),
+                    Text('Date: Oct 24, 2026 | Total Items: 15 | Amount: ${AppCurrency.format(350.00)}', style: const TextStyle(color: Colors.grey)),
                     const SizedBox(height: 16),
                     Row(
                       children: [

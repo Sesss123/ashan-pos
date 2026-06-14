@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-// MOCK: Since we don't have Dio configured with this exact endpoint yet
+import '../../../../core/network/dio_client.dart';
 class ExecutiveState {
   final bool isLoading;
   final Map<String, dynamic> data;
@@ -17,32 +16,23 @@ class ExecutiveState {
   }
 }
 
-class ExecutiveNotifier extends StateNotifier<ExecutiveState> {
-  ExecutiveNotifier() : super(ExecutiveState());
+class ExecutiveNotifier extends Notifier<ExecutiveState> {
+  @override
+  ExecutiveState build() => ExecutiveState();
 
   Future<void> fetchGodView() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      // MOCK: Simulating backend call to ExecutiveDashboardService.getEnterpriseGodView()
-      await Future.delayed(const Duration(seconds: 2)); // Simulate network latency
+      final dio = ref.read(dioClientProvider).dio;
+      final res = await dio.get('/executive/dashboard'); // Real API endpoint
       
-      final mockData = {
-        'enterpriseRevenue': 124500.50,
-        'activeBranches': 12,
-        'liveOrders': 45,
-        'insights': [
-          {'title': 'Weekend Sales Surge Expected', 'impact': 'High', 'category': 'Revenue'},
-          {'title': 'Low Stock: Mozzarella Cheese (Branch 02)', 'impact': 'Medium', 'category': 'Inventory'}
-        ]
-      };
-      
-      state = state.copyWith(isLoading: false, data: mockData);
+      state = state.copyWith(isLoading: false, data: res.data as Map<String, dynamic>);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 }
 
-final executiveProvider = StateNotifierProvider<ExecutiveNotifier, ExecutiveState>((ref) {
+final executiveProvider = NotifierProvider<ExecutiveNotifier, ExecutiveState>(() {
   return ExecutiveNotifier();
 });

@@ -16,8 +16,12 @@ class CartItem {
   double get subtotal => unitPrice * quantity;
 }
 
-class CartNotifier extends StateNotifier<List<CartItem>> {
-  CartNotifier() : super([]);
+class CartNotifier extends Notifier<List<CartItem>> {
+  double discount = 0.0;
+  double taxRate = 0.0;
+
+  @override
+  List<CartItem> build() => [];
 
   void addItem(CartItem item) {
     final existingItemIndex = state.indexWhere((i) => i.productId == item.productId);
@@ -36,11 +40,25 @@ class CartNotifier extends StateNotifier<List<CartItem>> {
 
   void clearCart() {
     state = [];
+    discount = 0.0;
+    taxRate = 0.0;
   }
 
-  double get total => state.fold(0, (sum, item) => sum + item.subtotal);
+  void setDiscount(double amount) {
+    discount = amount;
+    ref.notifyListeners();
+  }
+
+  void setTaxRate(double rate) {
+    taxRate = rate;
+    ref.notifyListeners();
+  }
+
+  double get subtotal => state.fold(0, (sum, item) => sum + item.subtotal);
+  double get taxAmount => subtotal * taxRate;
+  double get total => (subtotal - discount) + taxAmount;
 }
 
-final cartProvider = StateNotifierProvider<CartNotifier, List<CartItem>>((ref) {
+final cartProvider = NotifierProvider<CartNotifier, List<CartItem>>(() {
   return CartNotifier();
 });

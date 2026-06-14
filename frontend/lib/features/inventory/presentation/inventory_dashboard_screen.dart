@@ -52,10 +52,10 @@ class InventoryDashboardScreen extends ConsumerWidget {
   Widget _buildSummaryCard(BuildContext context, String title, String value, Color color) {
     return Expanded(
       child: Card(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         elevation: 0,
         shape: RoundedRectangleBorder(
-          side: BorderSide(color: color.withOpacity(0.5), width: 2),
+          side: BorderSide(color: color.withValues(alpha: 0.5), width: 2),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Padding(
